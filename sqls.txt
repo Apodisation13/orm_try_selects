@@ -1,0 +1,38 @@
+1. Количество исполнителей в каждом жанре:
+# query = session.query(
+#     Genres.genre, sq.func.count())\
+#     .join(artists_genres)\
+#     .group_by(Genres.genre_id)\
+#     .order_by(sq.func.count().desc())
+
+2. Количество треков, вошедших в альбомы 2019-2021 годов:
+query = session.query(Songs.song_name, Albums.year).join(Albums).filter(Albums.year.between(2019, 2021))
+
+3. Средняя продолжительность треков по каждому альбому:
+# query = session.query(Albums.album_id, Albums.album_name, sq.func.AVG(Songs.duration_time)).\
+#     join(Songs).group_by(Albums.album_id, Albums.album_name).order_by(Albums.album_id)
+
+4. Все исполнители, которые не выпустили альбомы в 2020 году:
+inner_query = session.query(Artists.artist_name).join(Albums).filter(Albums.year == 2020)
+query = session.query(Artists.artist_name).filter(Artists.artist_name.notin_(inner_query))
+
+5. Названия сборников, в которых присутствует конкретный исполнитель (Linkin Park):
+# query = session.query(Collections.c_name.distinct()).\
+#     join(collections_songs).join(Songs).join(Albums).join(Artists).\
+#     filter(Artists.artist_name == 'Linkin Park')
+
+6. Название альбомов, в которых присутствуют исполнители более 1 жанра:
+subquery = session.query(Artists.id).join(artists_genres).group_by(Artists.id).having(sq.func.count() > 1)
+query = session.query(Albums.album_name).filter(Albums.artist_id.in_(subquery))
+
+7. Наименование треков, которые не входят в сборники:
+subquery = session.query(Songs.song_id).join(Songs.collections)
+query = session.query(Songs.song_name).filter(Songs.song_id.notin_(subquery))
+
+8. Исполнителя(-ей), написавшего самый длинный по продолжительности трек:
+subquery = session.query(sq.func.max(Songs.duration))
+query = session.query(Artists.artist_name).join(Albums).join(Songs).filter(Songs.duration == subquery)
+
+9. Название альбомов, содержащих наименьшее количество треков:
+sq_min = session.query(sq.func.count(Songs.album_id)).group_by(Songs.album_id).order_by(sq.func.count()).limit(1)
+q_min = session.query(Albums.album_name).join(Songs).group_by(Albums.album_name).having(sq.func.count() == sq_min)
